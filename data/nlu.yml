@@ -1,0 +1,95 @@
+version: "2.0"
+
+nlu:
+- intent: greet
+  examples: |
+    - hey
+    - hello
+    - hi
+    - hello there
+    - good morning
+    - good evening
+    - goodmorning
+    - goodevening
+    - good afternoon
+
+- intent: goodbye
+  examples: |
+    - good afternoon
+    - cu
+    - good by
+    - cee you later
+    - good night
+    - bye
+    - goodbye
+    - have a nice day
+    - see you around
+    - bye bye
+    - see you later
+
+- intent: bot_challenge
+  examples: |
+    - are you a bot?
+    - are you a human?
+    - am I talking to a bot?
+    - am I talking to a human?
+
+- intent: hotel_book
+  examples: |
+    - book me room for [4 people](guest) in budget of [$200](currency)
+    - book me room of [2 beds](guest)
+    - show me a hotel with [swimming pool](amenities)
+    - can you book a room for [3 guests](guest)
+    - let me know the hotels with free [wifi](amenities)
+    - rooms for [7 guys](guest) with complimentary [breakfast](amenities)
+    - book me a room in hotel under [£700](currency) for [couple](guest) having [laundry](amenities) service
+    - list of hotels with [parking](amenities)
+    - rooms within the range of [₹5000](currency) to [€1000](currency)
+    - book a room for (2 days)[day] within budget of [400$](currency)
+    - can i have a room booked in hotel for [1 day](day) for [1 person](guest) for [200 dollars](currency)
+    - is a there a room for [100 euros](currency) for [6 days](day)
+    - searching for a room within budget of [400 $](currency)    
+    - give a hotel for stay of [two nights](day)
+    - book a hotel for [1 night](day) and [2 days](day)
+    - i want a room for [3 nights](day), and i don’t want to spend more than [$300](currency)
+    - get me a hotel within [$400](currency) for [3 nights](day)
+    - book me a hotel for [five night](day)
+    - can i get a hotel with [swimming pool](amenities) for [1 night](day)
+
+
+- lookup: amenities
+  examples: |
+    - parking
+    - swimming pool
+    - wifi
+    - laundry
+    - breakfast
+
+
+- lookup: guest
+  examples: |
+    - 4 people
+    - 2 beds
+    - 3 guests
+    - 7 guys
+    - couple
+
+
+- lookup: day
+  examples: |
+    - 7 days
+    - 1 day
+    - 3 days
+    - 2 days 
+
+- lookup: currency
+  examples: |
+    - $200
+    - 300 $
+    - 400 dollars
+    - €1000
+    - 100 euros
+
+
+
+
