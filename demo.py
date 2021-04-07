@@ -67,24 +67,6 @@ def clear_memory():
     session.pop('location', None)
     session.pop('intent', None)
 
-def location_fetch(sentence):
-    text = list()
-    label = list()
-    nlp2 = spacy.load("/home/rahul/Desktop/hotel/goldmodel")
-    a = re.sub(r'[^\w]', ' ', sentence)
-    doc1 = nlp2(a)
-
-    for i in doc1.ents:
-        text.append(i.text)
-
-        
-    ans = {'location': text}
-    print(ans)
-    return(text)
-
-def test(sentence):
-    print("the sentence is :" + sentence)
-
 
 def Result(sentence):
     sent = sentence
