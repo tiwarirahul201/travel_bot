@@ -36,26 +36,42 @@ nlu:
 
 - intent: hotel_book
   examples: |
-    - book me room for [4 people](guest) in budget of [$200](currency)
-    - book me room of [2 beds](guest)
+    - book a room for [4 people](guest) in budget of [$200](currency)
+    - book a room of [2 beds](guest)
     - show me a hotel with [swimming pool](amenities)
     - can you book a room for [3 guests](guest)
-    - let me know the hotels with free [wifi](amenities)
+    - let a know the hotels with free [wifi](amenities)
     - rooms for [7 guys](guest) with complimentary [breakfast](amenities)
-    - book me a room in hotel under [£700](currency) for [couple](guest) having [laundry](amenities) service
+    - book a room in hotel under [£700](currency) for [couple](guest) having [laundry](amenities) service
     - list of hotels with [parking](amenities)
     - rooms within the range of [₹5000](currency) to [€1000](currency)
-    - book a room for (2 days)[day] within budget of [400$](currency)
-    - can i have a room booked in hotel for [1 day](day) for [1 person](guest) for [200 dollars](currency)
-    - is a there a room for [100 euros](currency) for [6 days](day)
+    - book a room for (2 days)[day] in the month of [june](month) within budget of [400$](currency)
+    - can i have a room booked in hotel for [1 day](day) in [may](month)  for [1 person](guest) for [200 dollars](currency)
+    - is a there a room for [100 euros](currency) for [6 days](day) in [april](month)
     - searching for a room within budget of [400 $](currency)    
-    - give a hotel for stay of [two nights](day)
-    - book a hotel for [1 night](day) and [2 days](day)
-    - i want a room for [3 nights](day), and i don’t want to spend more than [$300](currency)
-    - get me a hotel within [$400](currency) for [3 nights](day)
-    - book me a hotel for [five night](day)
-    - can i get a hotel with [swimming pool](amenities) for [1 night](day)
-
+    - give a hotel for stay of [two nights](day) for [march](month)
+    - book a hotel for [1 night](day) and [2 days](day) in [february](month)
+    - i want a room for [3 nights](day) for the month of [january](month), and i don’t want to spend more than [$300](currency)
+    - get a hotel within [$400](currency) for [3 nights](day) in the month of [december](month)
+    - book a hotel for [five night](day) in [november](month)
+    - can i get a hotel with [swimming pool](amenities) for [1 night](day) this [october](month)
+    - i'd like to book a hotel in Lisbon for a [weekend](day) in [august](month)
+    - book a hotel for a [week](day) in [september](month)
+    - book a hotel for [fortnight](day) in month of [july](month) within budget of [£70](currency)
+    - show hotel under [60 euros](currency)
+    - book a hotel for [3 weeks](day) in [jan](month)
+    - show hotel for duration of [1 week](day) in lisbon
+    - book a hotel for [me](person) and my [wife](person)
+    - book a hotel for just [myself](person), my [husband](person) and our [baby](person)
+    - show hotel for my [girlfriend](person) and [boyfriend](person)
+    - book a hotel for my [father](person) , [mother](person) , [uncle](person) , [anuty](person) , [fiance](person) , [brother](person)
+    - show hotels for [sister](person)
+    - show hotel for [me](person) and my [friend](person)
+    - book a hotel for [children](person) , [child](person) ,  [son](person), [daughter](person)
+    - book a hotel for my [parents](person)
+    - [me](person) and my [wife](person) needs a hotel
+    - need a hotel for [3 adults](person) and [2 children](person)
+    - need a hotel for [me](person) and [3 friends](person)
 
 - lookup: amenities
   examples: |

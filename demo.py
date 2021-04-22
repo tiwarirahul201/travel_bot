@@ -1,9 +1,7 @@
 from flask import Flask, jsonify,request,session
-import spacy
 from flask_httpauth import HTTPBasicAuth
 from werkzeug.security import generate_password_hash, check_password_hash
 import collections
-import os 
 import re
 import urllib
 import requests
@@ -12,13 +10,15 @@ import requests
 import shelve 
 from urllib.request import Request, urlopen
 from io import BytesIO
-import ssl
 from rasa.nlu.model import Metadata, Interpreter
 import json
 import os 
 import copy 
 import random
 import spacy
+from sutime import SUTime
+import datetime
+
 
 nlp = spacy.load("en_core_web_sm")
 
@@ -26,19 +26,23 @@ abspath = os.path.abspath(__file__)
 
 ROOT_PATH = os.path.dirname(abspath)
 
-interpreter = Interpreter.load(ROOT_PATH+"/models/nlu-20210326-120228/nlu")
+interpreter = Interpreter.load(ROOT_PATH+"/models/nlu-20210419-115906/nlu")
+
+sutime = SUTime(mark_time_ranges=True, include_range=True)
+
 
 
 def Intent(sentence,interpreter):
-    sentence = re.sub(r"[^a-zA-Z0-9$]+", ' ', sentence)
+    sentence = re.sub(r"[^a-zA-Z0-9$£]+", ' ', sentence)
 
     answer = (interpreter.parse(sentence))
-    print(answer)
+
     dic = {}
 
     score = (answer['intent']['confidence'])
     ans = (answer['intent']['name'])
 
+    person = []
 
     for j in range(len(answer['entities'])):
         if (answer['entities'][j]['entity'] == 'amenities'):
@@ -54,7 +58,21 @@ def Intent(sentence,interpreter):
         elif(answer['entities'][j]['entity'] == 'currency'):
             currency = (answer['entities'][j]['value'])
             dic['currency'] = currency
+        elif(answer['entities'][j]['entity'] == 'month'):
+            month = (answer['entities'][j]['value'])
+            dic['month'] = month
+        elif(answer['entities'][j]['entity'] == 'person'):
+            person_val = (answer['entities'][j]['value'])
+            person.append(person_val)
 
+    if person:
+        str1 = ' '.join(person)
+
+        dic['person'] = str1 
+
+
+
+    print(dic)
 
     return(ans,dic)
 
@@ -66,40 +84,40 @@ def clear_memory():
     session.pop('amenities', None)
     session.pop('location', None)
     session.pop('intent', None)
+    session.pop('check_in', None)
+    session.pop('check_out_date', None)
+    session.pop('month',None)
+    session.pop('person',None)
+    session.pop('flag',None)
+    session.pop('a',None)
+    session.pop('b',None)
 
 
-def Result(sentence):
-    sent = sentence
-    sentence = sentence.lower()
-    currency_regex = re.compile(r"(?:[,\d][0-9]+[\£\$\€\₹| usd|usd]+.?\d*)")
+def validate(date_text):
+    try:
+        datetime.datetime.strptime(date_text, '%Y-%m-%d')
+        print('correct format')
+        return(0)
+    except ValueError:
+        print("Incorrect data format, should be YYYY-MM-DD")
+        return(1)
 
-    match = currency_regex.search(sentence)
-    if match:
-        session['currency'] = session.get('currency', match[0])
-        print(session['currency'])
+def time(sentence):
+    ans = (json.dumps(sutime.parse(sentence), sort_keys=True, indent=4))
+    ans = json.loads(ans)
+    print((ans))
+    return(ans)
 
-    ans,ans1 = Intent(sentence,interpreter)
-
-    print(sent)
-
-
-    doc = nlp(sent)
-    for ent in doc.ents:
-        if(ent.label_ == 'GPE' or ent.label_ == 'LOC' ):
-            session['location'] = session.get('loc',ent.text)
-            print(session['location'])
-        else:
-            print('No location found')
-    
-    print(ans,ans1)
-    
+def capture_entity(ans,ans1):
 
     if 'intent' not in session:
         session['intent'] = ans
-        # print(session.get('intent'))
-  
+        print(session.get('intent'))
+
+
     if 'day' in ans1:
         session['day'] = session.get('day', ans1['day'])
+        print(session['day'])
    
     if 'amenities' in ans1:
         session['amenities'] = session.get('amenities', ans1['amenities'])
@@ -109,13 +127,158 @@ def Result(sentence):
         session['guest'] = session.get('guest', ans1['guest'])
         print(session['guest'])
 
+    if 'person' in ans1:
+        session['guest'] = session.get('guest', ans1['person'])
+        print(session['guest'])
+
     if 'currency' in ans1:
         session['currency'] = session.get('currency', ans1['currency'])
         print(session['currency'])
 
+    if 'month' in ans1:
+        session['month'] = session.get('month', ans1['month'])
+        print(session['month'])
 
-    print(session.get('intent'))
 
+
+
+def Result(sentence):
+    sent = sentence
+    doc = nlp(sent)
+    for ent in doc.ents:
+        if(ent.label_ == 'GPE' or ent.label_ == 'LOC' ):
+            session['location'] = session.get('loc',ent.text)
+            print(session['location'])
+        else:
+            print('No location found')
+ 
+    sentence = sentence.lower()
+    time_value = time(sentence)
+    if (len(time_value) == 1):
+        print('1 length')
+        valid_result = validate(time_value[0]['value'])
+        if (valid_result == 0):
+            ans,ans1 = Intent(sentence,interpreter)
+            if 'day' in ans1:
+                session['check_out_date'] = session.get('check_out_date', time_value[0]['value'])
+                session['day'] = session.get('day', ans1['day'])
+                print(session['day'])
+                str1 = session['day']+' before ' + session['check_out_date']
+                check_in = time(str1)
+                check_in = check_in[0]['value']
+                session['check_in'] = session.get('check_in', check_in)
+            else:
+                session['check_in'] = session.get('check_in', time_value[0]['value'])
+        else:
+
+            ans,ans1 = Intent(sentence,interpreter)
+
+            if 'month' in ans1:
+                if 'month' in session:
+                    session['check_in'] = session.get('check_in',time_value[0]['text'])
+                else:
+                    capture_entity(ans,ans1)
+                    session['flag'] = session.get('flag',1)
+                    return('Any specific date in '+session.get('month')+' ?')
+
+            else:
+                if 'flag' in session:
+                    str2 = str(time_value[0]['text'])+" "+str(session.get('month'))
+                    session['check_in'] = session.get('check_in',str2)
+                # else:
+                #     session['check_in'] = session.get('check_in',time_value[0]['text'])
+
+
+    elif (len(time_value) == 2):
+        print('length greater than 1')
+
+        for i in range(len(time_value)):
+
+            if (time_value[i]['type'] == 'DURATION'):
+                session['a']= session.get('a',True)
+            if (time_value[i]['type'] == 'DATE'):
+                session['b']= session.get('b',True)
+
+        if (session.get('a') == True and session.get('b') == True):
+            for i in range(len(time_value)):
+                if time_value[i]['type'] == 'DURATION':
+                    session['day'] = session.get('day', time_value[i]['text'])
+                    print(time_value[i]['text'])
+                if time_value[i]['type'] == 'DATE':
+                    session['check_in'] = session.get('check_in', time_value[i]['text'])
+
+        else:
+            ans,ans1 = Intent(sentence,interpreter)
+
+            if 'month' in ans1:
+                if 'month' in session:
+                    session['check_in'] = session.get('check_in',time_value[0]['text'])
+                else:
+                    capture_entity(ans,ans1)
+                    session['flag'] = session.get('flag',1)
+                    return('Any specific date in '+session.get('month')+' ?')
+            else:
+                if 'flag' in session:
+                    str2 = str(time_value[0]['text'])+" "+str(session.get('month'))
+                    session['check_in'] = session.get('check_in',str2)
+                else:
+                    session['check_in'] = session.get('check_in',time_value[0]['text'])
+
+
+
+
+
+    if (sentence.strip() == 'confirm'):
+        ans = confirm_book()
+        return(ans)
+
+    elif(sentence.strip() == 'cancel'):
+        ans = cancel_book()
+        return(ans)
+
+    elif(sentence.strip() == 'alter'):
+        ans = alter_book()
+        return(ans)
+
+    if (sentence.strip() == 'days of stay'):
+        day = get_day()
+        session.pop('day', None)
+        return(day)
+
+    elif (sentence.strip() == 'no of guests'):
+        guest = get_guest()
+        session.pop('guest', None)
+        return(guest)
+
+    elif (sentence.strip() == 'budget'):
+        currency = get_currency()
+        session.pop('currency',None)
+        return(currency)
+
+    elif (sentence.strip() == 'location'):
+        location = get_location()
+        session.pop('location', None)
+        return(location)
+
+    elif (sentence.strip() == 'amenities'):
+        amenities = get_amenities()
+        session.pop('amenities', None)
+        return(amenities)
+  
+
+    elif (sentence.strip() == 'check in date'):
+        chk_in = get_check_in()
+        session.pop('check_in', None)
+        return(chk_in)
+
+
+
+
+    ans,ans1 = Intent(sentence,interpreter)
+   
+    print(ans,ans1)
+
+    capture_entity(ans,ans1)
 
 
     if(session['intent'] == 'hotel_book'):
@@ -124,9 +287,9 @@ def Result(sentence):
             day = get_day()
             return(day)
 
-        if 'amenities' not in session:
-            amenities = get_amenities()
-            return(amenities)
+        if 'check_in' not in session:
+            check_in = get_check_in()
+            return(check_in)
 
         if 'guest' not in session:
             guest = get_guest()
@@ -136,6 +299,11 @@ def Result(sentence):
         if 'currency' not in session:
             currency = get_currency()
             return(currency)
+
+        if 'amenities' not in session:
+            amenities = get_amenities()
+            return(amenities)
+
 
         if 'location' not in session:
             location = get_location()
@@ -149,10 +317,15 @@ def Result(sentence):
             C_amenities = session.get('amenities')
             C_currency = session.get('currency')
             C_location = session.get('location')
+            C_check_in = session.get('check_in')
+            # C_check_out = session.get('check_out_date')
 
-            clear_memory()
+            # clear_memory()
+
+            a = cofirmation_prompt(C_day,C_guest,C_location,C_amenities,C_currency,C_check_in)
             
-            return('Based on your budget of '+C_currency+' a hotel in '+C_location+' for '+C_guest+' with amenities like '+C_amenities+' for '+C_day+' is The Ritz-Carlton, Los Angeles')
+            return(a)
+            # return('Based on your budget of '+C_currency+' a hotel in '+C_location+' for '+C_guest+' with amenities like '+C_amenities+' for '+C_day+' is The Ritz-Carlton, Los Angeles')
 
     if(session['intent'] == 'greet'):
         clear_memory()
@@ -166,7 +339,6 @@ def Result(sentence):
         clear_memory()
         return('I am hotel booking bot.You can book your hotels with me.')
 
-
     else:
         clear_memory()
         return("Sorry I am unable to answer your query right now.I wil surely try to improve it.")
@@ -174,7 +346,7 @@ def Result(sentence):
 
 
 def get_day():
-    b = ("Please select number of days of stay <br> <a href='javascript:void(0)' class='response_back'>1 Days </a> <a href='javascript:void(0)' class='response_back'>2 Days </a> <a href='javascript:void(0)' class='response_back'>3 Days </a> <a href='javascript:void(0)' class='response_back'>4 Days </a>")
+    b = ("Please provide your number days of stay .")
     return(b)
 
 def get_amenities():
@@ -182,14 +354,58 @@ def get_amenities():
     return(b)
 
 def get_guest():
-    c = ("Please select number of guests. <br> <a href='javascript:void(0)' class='response_back'>1 Person </a> <a href='javascript:void(0)' class='response_back'>2 People</a> <a href='javascript:void(0)' class='response_back'>3 People</a> <a href='javascript:void(0)' class='response_back'>4 People</a>")
+    c = ("How many people will be in your party?")
     return(c)
 
 def get_currency():
-    c = ("Please select price range. <br> <a href='javascript:void(0)' class='response_back'>200$ </a> <a href='javascript:void(0)' class='response_back'>300$ </a> <a href='javascript:void(0)' class='response_back'>400$ </a> <a href='javascript:void(0)' class='response_back'>600$ </a>")
+    c = ("Great, and how much would you like to spend per a night?")
     return(c)
 
 def get_location():
-    c = ("Please select a country. <br> <a href='javascript:void(0)' class='response_back'>Nepal </a> <a href='javascript:void(0)' class='response_back'>London </a> <a href='javascript:void(0)' class='response_back'>India </a> <a href='javascript:void(0)' class='response_back'>Japan </a>")
+    c = ("Please provide your location of stay.")
     return(c)
 
+def get_check_in():
+    d = ("Please enter check in date.")
+    return(d)
+
+def cofirmation_prompt(day,guest,location,amenity,budget,check_in):
+    ans = ("Please confirm details provided by you : <br>Check in date:    "+check_in+" <br>Number of days:   "+day+"<br>No. of guest:    "+guest+"<br>Amenities:     "+amenity+"<br>Location:    "+location+"<br>Budget:     "+budget+"<br>  <a href='javascript:void(0)' class='response_back'> Confirm </a> <a href='javascript:void(0)' class='response_back'> Alter </a><a href='javascript:void(0)' class='response_back'> Cancel </a>")
+    return(ans)
+
+def confirm_book():
+    C_day = session.get('day')
+    C_guest = session.get('guest')
+    C_amenities = session.get('amenities')
+    C_currency = session.get('currency')
+    C_location = session.get('location')
+    C_check_in = session.get('check_in')
+
+    answer_dic = {
+     "Day of Stay": C_day,
+     "Check in": C_check_in,
+     "Guests": C_guest,
+     "Amenities": C_amenities,
+     "Budget": C_currency,
+     "Location": C_location  
+    }
+
+    final_json = json.dumps(answer_dic , indent = 4)
+
+    final_json = json.loads(final_json)
+
+    print(final_json)
+    print(type(final_json))
+
+    clear_memory()
+
+    return('Based on your budget of '+C_currency+' a hotel in '+C_location+' for '+C_guest+' with amenities like '+C_amenities+' for '+C_day+' starting from '+C_check_in+' is The Ritz-Carlton, Los Angeles')
+
+def cancel_book():
+    clear_memory()
+    ans = 'Your booking has been cancelled.'
+    return(ans)
+
+def alter_book():
+    ans = ("Please select a option which needs to be changed: <br> <a href='javascript:void(0)' class='response_back'> Days of Stay  </a> <a href='javascript:void(0)' class='response_back'> Budget </a> <a href='javascript:void(0)' class='response_back'> No of Guests </a> <a href='javascript:void(0)' class='response_back'> Location </a> <a href='javascript:void(0)' class='response_back'> Amenities </a><a href='javascript:void(0)' class='response_back'> Check in date </a>")
+    return(ans)
