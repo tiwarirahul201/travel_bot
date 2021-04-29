@@ -18,6 +18,9 @@ import random
 import spacy
 from sutime import SUTime
 import datetime
+import sys
+import calendar
+
 
 
 nlp = spacy.load("en_core_web_sm")
@@ -66,13 +69,12 @@ def Intent(sentence,interpreter):
             person.append(person_val)
 
     if person:
-        str1 = ' '.join(person)
-
-        dic['person'] = str1 
-
-
-
-    print(dic)
+        if 'parents' in person:
+            len_guest = len(person) + 1
+        else :
+            len_guest = len (person)
+        # str1 = ' '.join(person)
+        dic['person'] = str (len_guest) + ' people'
 
     return(ans,dic)
 
@@ -154,78 +156,25 @@ def Result(sentence):
  
     sentence = sentence.lower()
     time_value = time(sentence)
-    if (len(time_value) == 1):
-        print('1 length')
-        valid_result = validate(time_value[0]['value'])
-        if (valid_result == 0):
-            ans,ans1 = Intent(sentence,interpreter)
-            if 'day' in ans1:
-                session['check_out_date'] = session.get('check_out_date', time_value[0]['value'])
-                session['day'] = session.get('day', ans1['day'])
-                print(session['day'])
-                str1 = session['day']+' before ' + session['check_out_date']
-                check_in = time(str1)
-                check_in = check_in[0]['value']
-                session['check_in'] = session.get('check_in', check_in)
+    for i in range(len(time_value)):
+        if (time_value[i]['type'] == 'DATE'):
+            valid_result = validate(time_value[i]['value'])
+            if (valid_result == 0):
+                check_in_date = time_value[i]['value']
+                session['check_in'] = session.get('check_in', check_in_date)
+                print(session['check_in'])
             else:
-                session['check_in'] = session.get('check_in', time_value[0]['value'])
-        else:
-
-            ans,ans1 = Intent(sentence,interpreter)
-
-            if 'month' in ans1:
-                if 'month' in session:
-                    session['check_in'] = session.get('check_in',time_value[0]['text'])
-                else:
-                    capture_entity(ans,ans1)
-                    session['flag'] = session.get('flag',1)
-                    return('Any specific date in '+session.get('month')+' ?')
-
-            else:
-                if 'flag' in session:
-                    str2 = str(time_value[0]['text'])+" "+str(session.get('month'))
-                    session['check_in'] = session.get('check_in',str2)
-                # else:
-                #     session['check_in'] = session.get('check_in',time_value[0]['text'])
-
-
-    elif (len(time_value) == 2):
-        print('length greater than 1')
-
-        for i in range(len(time_value)):
-
-            if (time_value[i]['type'] == 'DURATION'):
-                session['a']= session.get('a',True)
-            if (time_value[i]['type'] == 'DATE'):
-                session['b']= session.get('b',True)
-
-        if (session.get('a') == True and session.get('b') == True):
-            for i in range(len(time_value)):
-                if time_value[i]['type'] == 'DURATION':
-                    session['day'] = session.get('day', time_value[i]['text'])
-                    print(time_value[i]['text'])
-                if time_value[i]['type'] == 'DATE':
-                    session['check_in'] = session.get('check_in', time_value[i]['text'])
-
-        else:
-            ans,ans1 = Intent(sentence,interpreter)
-
-            if 'month' in ans1:
-                if 'month' in session:
-                    session['check_in'] = session.get('check_in',time_value[0]['text'])
-                else:
-                    capture_entity(ans,ans1)
-                    session['flag'] = session.get('flag',1)
-                    return('Any specific date in '+session.get('month')+' ?')
-            else:
-                if 'flag' in session:
-                    str2 = str(time_value[0]['text'])+" "+str(session.get('month'))
-                    session['check_in'] = session.get('check_in',str2)
-                else:
-                    session['check_in'] = session.get('check_in',time_value[0]['text'])
-
-
-
+                a = (time(time_value[i]['value']))
+                date = a[0]['value']
+                a_split = date.split('-')
+                print(a_split)
+                if (len(a_split) == 2):
+                    year = int(a_split[0].lstrip('0'))
+                    month = int(a_split[1].lstrip('0'))
+                    print(year,month)
+                    last_friday = max(week[-3] for week in calendar.monthcalendar(year,month))
+                    check_in_date = ('{}-{}-{:2}'.format(year, calendar.month_abbr[month], last_friday))
+                    session['check_in'] = session.get('check_in', check_in_date)
 
 
     if (sentence.strip() == 'confirm'):
@@ -319,6 +268,41 @@ def Result(sentence):
             C_location = session.get('location')
             C_check_in = session.get('check_in')
             # C_check_out = session.get('check_out_date')
+            day_dic = {'week' : 7, 'fortnight': 15 , 'weekend': 2}
+
+            if C_day in day_dic.keys():
+                C_day = str(day_dic[C_day])+' day' 
+
+            # session['day'] = session.get('day',C_day)
+
+
+
+
+            res = [int(i) for i in C_day.split() if i.isdigit()]
+
+            print(res[0])
+            print(type(res[0]))
+
+            res2 = int(''.join([i for i in C_currency if  i.isdigit()]))
+            print(res2)
+            print(type(res2))
+
+
+            res1 = ''.join([i for i in C_currency if not i.isdigit()])
+            print(res1[0])
+            print(type(res1[0]))
+
+
+            ans = res1[0]+str(res[0] * res2) 
+
+            print(ans)
+
+            C_currency = ans
+
+            # session['currency'] = session.get('currency',C_currency)
+
+
+
 
             # clear_memory()
 
@@ -380,6 +364,39 @@ def confirm_book():
     C_currency = session.get('currency')
     C_location = session.get('location')
     C_check_in = session.get('check_in')
+
+
+    day_dic = {'week' : 7, 'fortnight': 15 , 'weekend': 2}
+
+    if C_day in day_dic.keys():
+        C_day = str(day_dic[C_day])+' day' 
+
+    # session['day'] = session.get('day',C_day)
+
+
+
+
+    res = [int(i) for i in C_day.split() if i.isdigit()]
+
+    print(res[0])
+    print(type(res[0]))
+
+    res2 = int(''.join([i for i in C_currency if  i.isdigit()]))
+    print(res2)
+    print(type(res2))
+
+
+    res1 = ''.join([i for i in C_currency if not i.isdigit()])
+    print(res1[0])
+    print(type(res1[0]))
+
+
+    ans = res1[0]+str(res[0] * res2) 
+
+    print(ans)
+
+    C_currency = ans
+
 
     answer_dic = {
      "Day of Stay": C_day,
