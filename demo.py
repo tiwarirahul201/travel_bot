@@ -29,7 +29,8 @@ abspath = os.path.abspath(__file__)
 
 ROOT_PATH = os.path.dirname(abspath)
 
-interpreter = Interpreter.load(ROOT_PATH+"/models/nlu-20210419-115906/nlu")
+
+interpreter = Interpreter.load(ROOT_PATH+"/models/nlu")
 
 sutime = SUTime(mark_time_ranges=True, include_range=True)
 
