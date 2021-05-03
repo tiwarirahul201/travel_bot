@@ -1,0 +1,18 @@
+[
+    {
+        "name": "amenities",
+        "pattern": "(\\bparking\\b|\\bswimming\\ pool\\b|\\bwifi\\b|\\blaundry\\b|\\bbreakfast\\b)"
+    },
+    {
+        "name": "guest",
+        "pattern": "(\\b4\\ people\\b|\\b2\\ beds\\b|\\b3\\ guests\\b|\\b7\\ guys\\b|\\bcouple\\b)"
+    },
+    {
+        "name": "day",
+        "pattern": "(\\b7\\ days\\b|\\b1\\ day\\b|\\b3\\ days\\b|\\b2\\ days\\b)"
+    },
+    {
+        "name": "currency",
+        "pattern": "(\\b\\$200\\b|\\b300\\ \\$\\b|\\b400\\ dollars\\b|\\b\\€1000\\b|\\b100\\ euros\\b)"
+    }
+]
