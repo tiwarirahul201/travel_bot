@@ -1,0 +1,17 @@
+version: "2"
+services:
+    web:
+        build: ./
+        volumes:
+            - './application:/application'
+        environment:
+            FLASK_DEBUG: 1
+            FLASK_ENV: development
+            FLASK_APP: app.py
+        ports:
+            - '5000:5000'
+        entrypoint:
+            - flask
+            - run
+            - --host=0.0.0.0
+
