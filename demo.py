@@ -69,6 +69,11 @@ def Intent(sentence,interpreter):
             person_val = (answer['entities'][j]['value'])
             person.append(person_val)
 
+    if 'currency' not in dic:
+        cost_regex = (r"(?:[,\d][0-9]+[\£\$\€\₹\ usd|usd]+.?\d*)")
+        x = re.findall(cost_regex, sentence)
+        if x:
+            dic['currency'] = x[0]
     if person:
         if 'parents' in person:
             len_guest = len(person) + 1
@@ -269,7 +274,17 @@ def Result(sentence):
             C_location = session.get('location')
             C_check_in = session.get('check_in')
             # C_check_out = session.get('check_out_date')
-            day_dic = {'week' : 7, 'fortnight': 15 , 'weekend': 2}
+            day_dic = {'week' : 7, 'fortnight': 15 , 'weekend': 2, 'weeks': 7}
+
+            x = C_day.split(' ')
+            print(len(x))
+            day_dic = {'week' : 7, 'fortnight': 15 , 'weekend': 2, 'weeks': 7}
+            if (len(x) > 1):
+                day = x[0]
+                if x[1] in day_dic.keys():
+                    C_day = str(int(day)*int(day_dic[x[1]])) + ' days'
+                    print(C_day)
+
 
             if C_day in day_dic.keys():
                 C_day = str(day_dic[C_day])+' day' 
@@ -283,6 +298,8 @@ def Result(sentence):
 
             print(res[0])
             print(type(res[0]))
+
+            print(C_currency)
 
             res2 = int(''.join([i for i in C_currency if  i.isdigit()]))
             print(res2)

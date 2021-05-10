@@ -34,4 +34,4 @@ def message_recieved(data):
 
 if __name__ == '__main__':
     """ Run the app. """    
-    socketio.run(app,debug=False)
+    socketio.run(app,debug=True)
