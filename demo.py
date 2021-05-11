@@ -1,0 +1,460 @@
+from flask import Flask, jsonify,request,session
+from flask_httpauth import HTTPBasicAuth
+from werkzeug.security import generate_password_hash, check_password_hash
+import collections
+import re
+import urllib
+import requests
+import json
+import requests
+import shelve 
+from urllib.request import Request, urlopen
+from io import BytesIO
+from rasa.nlu.model import Metadata, Interpreter
+import json
+import os 
+import copy 
+import random
+import spacy
+from sutime import SUTime
+import datetime
+import sys
+import calendar
+
+
+
+nlp = spacy.load("en_core_web_sm")
+
+abspath = os.path.abspath(__file__)
+
+ROOT_PATH = os.path.dirname(abspath)
+
+
+interpreter = Interpreter.load(ROOT_PATH+"/models/nlu")
+
+sutime = SUTime(mark_time_ranges=True, include_range=True)
+
+
+
+def Intent(sentence,interpreter):
+    sentence = re.sub(r"[^a-zA-Z0-9$£]+", ' ', sentence)
+
+    answer = (interpreter.parse(sentence))
+
+    dic = {}
+
+    score = (answer['intent']['confidence'])
+    ans = (answer['intent']['name'])
+
+    person = []
+
+    for j in range(len(answer['entities'])):
+        if (answer['entities'][j]['entity'] == 'amenities'):
+            amenities = (answer['entities'][j]['value'])
+            dic['amenities'] = amenities
+        if(answer['entities'][j]['entity'] == 'guest'):
+            print(answer['entities'][j]['value'])
+            guest = (answer['entities'][j]['value'])
+            dic['guest'] = guest
+        elif(answer['entities'][j]['entity'] == 'day'):
+            day = (answer['entities'][j]['value'])
+            dic['day'] = day
+        elif(answer['entities'][j]['entity'] == 'currency'):
+            currency = (answer['entities'][j]['value'])
+            dic['currency'] = currency
+        elif(answer['entities'][j]['entity'] == 'month'):
+            month = (answer['entities'][j]['value'])
+            dic['month'] = month
+        elif(answer['entities'][j]['entity'] == 'person'):
+            person_val = (answer['entities'][j]['value'])
+            person.append(person_val)
+
+    if 'currency' not in dic:
+        cost_regex = (r"(?:[,\d][0-9]+[\£\$\€\₹\ usd|usd]+.?\d*)")
+        x = re.findall(cost_regex, sentence)
+        if x:
+            dic['currency'] = x[0]
+    if person:
+        if 'parents' in person:
+            len_guest = len(person) + 1
+        else :
+            len_guest = len (person)
+        # str1 = ' '.join(person)
+        dic['person'] = str (len_guest) + ' people'
+
+    return(ans,dic)
+
+
+def clear_memory():
+    session.pop('currency',None)
+    session.pop('day', None)
+    session.pop('guest', None)
+    session.pop('amenities', None)
+    session.pop('location', None)
+    session.pop('intent', None)
+    session.pop('check_in', None)
+    session.pop('check_out_date', None)
+    session.pop('month',None)
+    session.pop('person',None)
+    session.pop('flag',None)
+    session.pop('a',None)
+    session.pop('b',None)
+
+
+def validate(date_text):
+    try:
+        datetime.datetime.strptime(date_text, '%Y-%m-%d')
+        print('correct format')
+        return(0)
+    except ValueError:
+        print("Incorrect data format, should be YYYY-MM-DD")
+        return(1)
+
+def time(sentence):
+    ans = (json.dumps(sutime.parse(sentence), sort_keys=True, indent=4))
+    ans = json.loads(ans)
+    print((ans))
+    return(ans)
+
+def capture_entity(ans,ans1):
+
+    if 'intent' not in session:
+        session['intent'] = ans
+        print(session.get('intent'))
+
+
+    if 'day' in ans1:
+        session['day'] = session.get('day', ans1['day'])
+        print(session['day'])
+   
+    if 'amenities' in ans1:
+        session['amenities'] = session.get('amenities', ans1['amenities'])
+        print(session['amenities'])
+
+    if 'guest' in ans1:
+        session['guest'] = session.get('guest', ans1['guest'])
+        print(session['guest'])
+
+    if 'person' in ans1:
+        session['guest'] = session.get('guest', ans1['person'])
+        print(session['guest'])
+
+    if 'currency' in ans1:
+        session['currency'] = session.get('currency', ans1['currency'])
+        print(session['currency'])
+
+    if 'month' in ans1:
+        session['month'] = session.get('month', ans1['month'])
+        print(session['month'])
+
+def fetch_location(sent):
+    doc = nlp(sent)
+    for ent in doc.ents:
+        if(ent.label_ == 'GPE' or ent.label_ == 'LOC' ):
+            session['location'] = session.get('loc',ent.text)
+            print(session['location'])
+        else:
+            print('No location found')
+
+    sent = sent.lower()
+    country = ['afghanistan', 'aland islands', 'albania', 'algeria', 'american samoa', 'andorra', 'angola', 'anguilla', 'antarctica', 'antigua and barbuda', 'argentina', 'armenia', 'aruba', 'australia', 'austria', 'azerbaijan', 'bahamas', 'bahrain', 'bangladesh', 'barbados', 'belarus', 'belgium', 'belize', 'benin', 'bermuda', 'bhutan', 'bolivia, plurinational state of', 'bonaire, sint eustatius and saba', 'bosnia and herzegovina', 'botswana', 'bouvet island', 'brazil', 'british indian ocean territory', 'brunei darussalam', 'bulgaria', 'burkina faso', 'burundi', 'cambodia', 'cameroon', 'canada', 'cape verde', 'cayman islands', 'central african republic', 'chad', 'chile', 'china', 'christmas island', 'cocos (keeling) islands', 'colombia', 'comoros', 'congo', 'congo, the democratic republic of the', 'cook islands', 'costa rica', "côte d'ivoire", 'croatia', 'cuba', 'curaçao', 'cyprus', 'czech republic', 'denmark', 'djibouti', 'dominica', 'dominican republic', 'ecuador', 'egypt', 'el salvador', 'equatorial guinea', 'eritrea', 'estonia', 'ethiopia', 'falkland islands (malvinas)', 'faroe islands', 'fiji', 'finland', 'france', 'french guiana', 'french polynesia', 'french southern territories', 'gabon', 'gambia', 'georgia', 'germany', 'ghana', 'gibraltar', 'greece', 'greenland', 'grenada', 'guadeloupe', 'guam', 'guatemala', 'guernsey', 'guinea', 'guinea-bissau', 'guyana', 'haiti', 'heard island and mcdonald islands', 'holy see (vatican city state)', 'honduras', 'hong kong', 'hungary', 'iceland', 'india', 'indonesia', 'iran, islamic republic of', 'iraq', 'ireland', 'isle of man', 'israel', 'italy', 'jamaica', 'japan', 'jersey', 'jordan', 'kazakhstan', 'kenya', 'kiribati', "korea, democratic people's republic of", 'korea, republic of', 'kuwait', 'kyrgyzstan', "lao people's democratic republic", 'latvia', 'lebanon', 'lesotho', 'liberia', 'libya', 'liechtenstein', 'lithuania', 'luxembourg', 'macao', 'macedonia, republic of', 'madagascar', 'malawi', 'malaysia', 'maldives', 'mali', 'malta', 'marshall islands', 'martinique', 'mauritania', 'mauritius', 'mayotte', 'mexico', 'micronesia, federated states of', 'moldova, republic of', 'monaco', 'mongolia', 'montenegro', 'montserrat', 'morocco', 'mozambique', 'myanmar', 'namibia', 'nauru', 'nepal', 'netherlands', 'new caledonia', 'new zealand', 'nicaragua', 'niger', 'nigeria', 'niue', 'norfolk island', 'northern mariana islands', 'norway', 'oman', 'pakistan', 'palau', 'palestinian territory, occupied', 'panama', 'papua new guinea', 'paraguay', 'peru', 'philippines', 'pitcairn', 'poland', 'portugal', 'puerto rico', 'qatar', 'réunion', 'romania', 'russian federation', 'rwanda', 'saint barthélemy', 'saint helena, ascension and tristan da cunha', 'saint kitts and nevis', 'saint lucia', 'saint martin (french part)', 'saint pierre and miquelon', 'saint vincent and the grenadines', 'samoa', 'san marino', 'sao tome and principe', 'saudi arabia', 'senegal', 'serbia', 'seychelles', 'sierra leone', 'singapore', 'sint maarten (dutch part)', 'slovakia', 'slovenia', 'solomon islands', 'somalia', 'south africa', 'south georgia and the south sandwich islands', 'spain', 'sri lanka', 'sudan', 'suriname', 'south sudan', 'svalbard and jan mayen', 'swaziland', 'sweden', 'switzerland', 'syrian arab republic', 'taiwan, province of china', 'tajikistan', 'tanzania, united republic of', 'thailand', 'timor-leste', 'togo', 'tokelau', 'tonga', 'trinidad and tobago', 'tunisia', 'turkey', 'turkmenistan', 'turks and caicos islands', 'tuvalu', 'uganda', 'ukraine', 'united arab emirates', 'united kingdom', 'united states', 'united states minor outlying islands', 'uruguay', 'uzbekistan', 'vanuatu', 'venezuela, bolivarian republic of', 'viet nam', 'virgin islands, british', 'virgin islands, u.s.', 'wallis and futuna', 'yemen', 'zambia', 'zimbabwe']
+    capital = ['kabul', 'tirana', 'algiers', 'pago pago', 'luanda', 'the valley', "saint john's", 'buenos aires', 'yerevan', 'oranjestad', 'canberra', 'vienna', 'baku', 'manama', 'dhaka', 'bridgetown', 'minsk', 'brussels', 'belmopan', 'porto-novo', 'hamilton', 'thimphu', 'sarajevo', 'gaborone', 'brasília', 'diego garcia', 'sofia', 'ouagadougou', 'bujumbura', 'phnom penh', 'yaoundé', 'ottawa', 'praia', 'george town', 'bangui', "n'djamena", 'santiago', 'beijing', 'flying fish cove', 'west island', 'bogotá', 'moroni', 'avarua', 'san josé', 'zagreb', 'havana', 'nicosia', 'prague', 'copenhagen', 'djibouti', 'roseau', 'santo domingo', 'quito', 'cairo', 'san salvador', 'malabo', 'asmara', 'tallinn', 'addis ababa', 'tórshavn', 'suva', 'helsinki', 'paris', 'cayenne', 'papeetē', 'libreville', 'tbilisi', 'berlin', 'accra', 'gibraltar', 'athens', 'nuuk', "st. george's", 'basse-terre', 'hagåtña', 'guatemala city', 'st. peter port', 'conakry', 'bissau', 'georgetown', 'port-au-prince', 'tegucigalpa', 'city of victoria', 'budapest', 'reykjavik', 'new delhi', 'jakarta', 'baghdad', 'dublin', 'douglas', 'jerusalem', 'rome', 'kingston', 'tokyo', 'saint helier', 'amman', 'astana', 'nairobi', 'south tarawa', 'kuwait city', 'bishkek', 'vientiane', 'riga', 'beirut', 'maseru', 'monrovia', 'tripoli', 'vaduz', 'vilnius', 'luxembourg', 'antananarivo', 'lilongwe', 'kuala lumpur', 'malé', 'bamako', 'valletta', 'majuro', 'fort-de-france', 'nouakchott', 'port louis', 'mamoudzou', 'mexico city', 'monaco', 'ulan bator', 'plymouth', 'rabat', 'maputo', 'windhoek', 'yaren', 'kathmandu', 'amsterdam', 'nouméa', 'wellington', 'managua', 'niamey', 'abuja', 'alofi', 'kingston', 'saipan', 'oslo', 'muscat', 'islamabad', 'ngerulmud', 'panama city', 'port moresby', 'asunción', 'lima', 'manila', 'warsaw', 'lisbon', 'san juan', 'doha', 'saint-denis', 'bucharest', 'moscow', 'kigali', 'basseterre', 'castries', 'saint-pierre', 'kingstown', 'apia', 'city of san marino', 'riyadh', 'dakar', 'belgrade', 'victoria', 'freetown', 'singapore', 'bratislava', 'ljubljana', 'honiara', 'mogadishu', 'pretoria', 'king edward point', 'madrid', 'colombo', 'khartoum', 'paramaribo', 'juba', 'longyearbyen', 'lobamba', 'stockholm', 'bern', 'damascus', 'dushanbe', 'bangkok', 'lomé', 'fakaofo', "nuku'alofa", 'port of spain', 'tunis', 'ankara', 'ashgabat', 'funafuti', 'kampala', 'kiev', 'abu dhabi', 'london', 'washington d.c.', 'montevideo', 'tashkent', 'port vila', 'mata-utu', "sana'a", 'lusaka', 'harare']
+    res = [ele for ele in country if(ele in sent)]
+    res1 = [ele for ele in capital if(ele in sent)]
+    if res:
+        loc = ''.join(res)
+        session['location'] = session.get('location',loc)
+
+    if res1:
+        loc = ''.join(res1)
+        session['location'] = session.get('location',loc)
+    
+
+
+def Result(sentence):
+    sent = sentence
+    fetch_location(sentence)
+    sentence = sentence.lower()
+    time_value = time(sentence)
+    for i in range(len(time_value)):
+        if (time_value[i]['type'] == 'DATE'):
+            valid_result = validate(time_value[i]['value'])
+            if (valid_result == 0):
+                check_in_date = time_value[i]['value']
+                session['check_in'] = session.get('check_in', check_in_date)
+                print(session['check_in'])
+            else:
+                a = (time(time_value[i]['value']))
+                date = a[0]['value']
+                a_split = date.split('-')
+                print(a_split)
+                if (len(a_split) == 2):
+                    year = int(a_split[0].lstrip('0'))
+                    month = int(a_split[1].lstrip('0'))
+                    print(year,month)
+                    last_friday = max(week[-3] for week in calendar.monthcalendar(year,month))
+                    check_in_date = ('{}-{}-{:2}'.format(year, calendar.month_abbr[month], last_friday))
+                    session['check_in'] = session.get('check_in', check_in_date)
+
+
+    if (sentence.strip() == 'confirm'):
+        ans = confirm_book()
+        return(ans)
+
+    elif(sentence.strip() == 'cancel'):
+        ans = cancel_book()
+        return(ans)
+
+    elif(sentence.strip() == 'alter'):
+        ans = alter_book()
+        return(ans)
+
+    if (sentence.strip() == 'days of stay'):
+        day = get_day()
+        session.pop('day', None)
+        return(day)
+
+    elif (sentence.strip() == 'no of guests'):
+        guest = get_guest()
+        session.pop('guest', None)
+        return(guest)
+
+    elif (sentence.strip() == 'budget'):
+        currency = get_currency()
+        session.pop('currency',None)
+        return(currency)
+
+    elif (sentence.strip() == 'location'):
+        location = get_location()
+        session.pop('location', None)
+        return(location)
+
+    elif (sentence.strip() == 'amenities'):
+        amenities = get_amenities()
+        session.pop('amenities', None)
+        return(amenities)
+  
+
+    elif (sentence.strip() == 'check in date'):
+        chk_in = get_check_in()
+        session.pop('check_in', None)
+        return(chk_in)
+
+
+
+
+    ans,ans1 = Intent(sentence,interpreter)
+   
+    print(ans,ans1)
+
+    capture_entity(ans,ans1)
+
+
+    if(session['intent'] == 'hotel_book'):
+
+        if 'day' not in session:
+            day = get_day()
+            return(day)
+
+        if 'check_in' not in session:
+            check_in = get_check_in()
+            return(check_in)
+
+        if 'guest' not in session:
+            guest = get_guest()
+            return(guest)
+
+
+        if 'currency' not in session:
+            currency = get_currency()
+            return(currency)
+
+        if 'amenities' not in session:
+            amenities = get_amenities()
+            return(amenities)
+
+
+        if 'location' not in session:
+            location = get_location()
+            return(location)
+
+
+
+        else:
+            C_day = session.get('day')
+            C_guest = session.get('guest')
+            C_amenities = session.get('amenities')
+            C_currency = session.get('currency')
+            C_location = session.get('location')
+            C_check_in = session.get('check_in')
+            # C_check_out = session.get('check_out_date')
+            day_dic = {'week' : 7, 'fortnight': 15 , 'weekend': 2, 'weeks': 7}
+
+            x = C_day.split(' ')
+            print(len(x))
+            day_dic = {'week' : 7, 'fortnight': 15 , 'weekend': 2, 'weeks': 7}
+            if (len(x) > 1):
+                day = x[0]
+                if x[1] in day_dic.keys():
+                    C_day = str(int(day)*int(day_dic[x[1]])) + ' days'
+                    print(C_day)
+
+
+            if C_day in day_dic.keys():
+                C_day = str(day_dic[C_day])+' day' 
+
+            # session['day'] = session.get('day',C_day)
+
+
+
+
+            res = [int(i) for i in C_day.split() if i.isdigit()]
+
+            print(res[0])
+            print(type(res[0]))
+
+            print(C_currency)
+
+            res2 = int(''.join([i for i in C_currency if  i.isdigit()]))
+            print(res2)
+            print(type(res2))
+
+
+            res1 = ''.join([i for i in C_currency if not i.isdigit()])
+            print(res1[0])
+            print(type(res1[0]))
+
+
+            ans = res1[0]+str(res[0] * res2) 
+
+            print(ans)
+
+            C_currency = ans
+
+            # session['currency'] = session.get('currency',C_currency)
+
+
+
+
+            # clear_memory()
+
+            a = cofirmation_prompt(C_day,C_guest,C_location,C_amenities,C_currency,C_check_in)
+            
+            return(a)
+            # return('Based on your budget of '+C_currency+' a hotel in '+C_location+' for '+C_guest+' with amenities like '+C_amenities+' for '+C_day+' is The Ritz-Carlton, Los Angeles')
+
+    if(session['intent'] == 'greet'):
+        clear_memory()
+        return('Hello. I can help you with your hotel booking')
+
+    if(session['intent'] == 'goodbye'):
+        clear_memory()
+        return('Thankyou it was great interacting with you.')
+  
+    if(session['intent'] == 'bot_challenge'):
+        clear_memory()
+        return('I am hotel booking bot.You can book your hotels with me.')
+
+    else:
+        clear_memory()
+        return("Sorry I am unable to answer your query right now.I wil surely try to improve it.")
+
+
+
+def get_day():
+    b = ("Please provide your number days of stay .")
+    return(b)
+
+def get_amenities():
+    b = ("Please select a must available amenities: <br> <a href='javascript:void(0)' class='response_back'>Swimming Pool</a> <a href='javascript:void(0)' class='response_back'>Laundry</a> <a href='javascript:void(0)' class='response_back'>Parking</a> <a href='javascript:void(0)' class='response_back'>Wifi</a>")
+    return(b)
+
+def get_guest():
+    c = ("How many people will be in your party?")
+    return(c)
+
+def get_currency():
+    c = ("Great, and how much would you like to spend per a night?")
+    return(c)
+
+def get_location():
+    c = ("Please provide your location of stay.")
+    return(c)
+
+def get_check_in():
+    d = ("Please enter check in date.")
+    return(d)
+
+def cofirmation_prompt(day,guest,location,amenity,budget,check_in):
+    ans = ("Please confirm details provided by you : <br>Check in date:    "+check_in+" <br>Number of days:   "+day+"<br>No. of guest:    "+guest+"<br>Amenities:     "+amenity+"<br>Location:    "+location+"<br>Budget:     "+budget+"<br>  <a href='javascript:void(0)' class='response_back'> Confirm </a> <a href='javascript:void(0)' class='response_back'> Alter </a><a href='javascript:void(0)' class='response_back'> Cancel </a>")
+    return(ans)
+
+def confirm_book():
+    C_day = session.get('day')
+    C_guest = session.get('guest')
+    C_amenities = session.get('amenities')
+    C_currency = session.get('currency')
+    C_location = session.get('location')
+    C_check_in = session.get('check_in')
+
+
+    day_dic = {'week' : 7, 'fortnight': 15 , 'weekend': 2}
+
+    if C_day in day_dic.keys():
+        C_day = str(day_dic[C_day])+' day' 
+
+    # session['day'] = session.get('day',C_day)
+
+
+
+
+    res = [int(i) for i in C_day.split() if i.isdigit()]
+
+    print(res[0])
+    print(type(res[0]))
+
+    res2 = int(''.join([i for i in C_currency if  i.isdigit()]))
+    print(res2)
+    print(type(res2))
+
+
+    res1 = ''.join([i for i in C_currency if not i.isdigit()])
+    print(res1[0])
+    print(type(res1[0]))
+
+
+    ans = res1[0]+str(res[0] * res2) 
+
+    print(ans)
+
+    C_currency = ans
+
+
+    answer_dic = {
+     "Day of Stay": C_day,
+     "Check in": C_check_in,
+     "Guests": C_guest,
+     "Amenities": C_amenities,
+     "Budget": C_currency,
+     "Location": C_location  
+    }
+
+    final_json = json.dumps(answer_dic , indent = 4)
+
+    final_json = json.loads(final_json)
+
+    print(final_json)
+    print(type(final_json))
+
+    clear_memory()
+
+    return('Based on your budget of '+C_currency+' a hotel in '+C_location+' for '+C_guest+' with amenities like '+C_amenities+' for '+C_day+' starting from '+C_check_in+' is The Ritz-Carlton, Los Angeles')
+
+def cancel_book():
+    clear_memory()
+    ans = 'Your booking has been cancelled.'
+    return(ans)
+
+def alter_book():
+    ans = ("Please select a option which needs to be changed: <br> <a href='javascript:void(0)' class='response_back'> Days of Stay  </a> <a href='javascript:void(0)' class='response_back'> Budget </a> <a href='javascript:void(0)' class='response_back'> No of Guests </a> <a href='javascript:void(0)' class='response_back'> Location </a> <a href='javascript:void(0)' class='response_back'> Amenities </a><a href='javascript:void(0)' class='response_back'> Check in date </a>")
+    return(ans)
