@@ -147,11 +147,7 @@ def capture_entity(ans,ans1):
         session['month'] = session.get('month', ans1['month'])
         print(session['month'])
 
-
-
-
-def Result(sentence):
-    sent = sentence
+def fetch_location(sent):
     doc = nlp(sent)
     for ent in doc.ents:
         if(ent.label_ == 'GPE' or ent.label_ == 'LOC' ):
@@ -159,7 +155,25 @@ def Result(sentence):
             print(session['location'])
         else:
             print('No location found')
- 
+
+    sent = sent.lower()
+    country = ['afghanistan', 'aland islands', 'albania', 'algeria', 'american samoa', 'andorra', 'angola', 'anguilla', 'antarctica', 'antigua and barbuda', 'argentina', 'armenia', 'aruba', 'australia', 'austria', 'azerbaijan', 'bahamas', 'bahrain', 'bangladesh', 'barbados', 'belarus', 'belgium', 'belize', 'benin', 'bermuda', 'bhutan', 'bolivia, plurinational state of', 'bonaire, sint eustatius and saba', 'bosnia and herzegovina', 'botswana', 'bouvet island', 'brazil', 'british indian ocean territory', 'brunei darussalam', 'bulgaria', 'burkina faso', 'burundi', 'cambodia', 'cameroon', 'canada', 'cape verde', 'cayman islands', 'central african republic', 'chad', 'chile', 'china', 'christmas island', 'cocos (keeling) islands', 'colombia', 'comoros', 'congo', 'congo, the democratic republic of the', 'cook islands', 'costa rica', "côte d'ivoire", 'croatia', 'cuba', 'curaçao', 'cyprus', 'czech republic', 'denmark', 'djibouti', 'dominica', 'dominican republic', 'ecuador', 'egypt', 'el salvador', 'equatorial guinea', 'eritrea', 'estonia', 'ethiopia', 'falkland islands (malvinas)', 'faroe islands', 'fiji', 'finland', 'france', 'french guiana', 'french polynesia', 'french southern territories', 'gabon', 'gambia', 'georgia', 'germany', 'ghana', 'gibraltar', 'greece', 'greenland', 'grenada', 'guadeloupe', 'guam', 'guatemala', 'guernsey', 'guinea', 'guinea-bissau', 'guyana', 'haiti', 'heard island and mcdonald islands', 'holy see (vatican city state)', 'honduras', 'hong kong', 'hungary', 'iceland', 'india', 'indonesia', 'iran, islamic republic of', 'iraq', 'ireland', 'isle of man', 'israel', 'italy', 'jamaica', 'japan', 'jersey', 'jordan', 'kazakhstan', 'kenya', 'kiribati', "korea, democratic people's republic of", 'korea, republic of', 'kuwait', 'kyrgyzstan', "lao people's democratic republic", 'latvia', 'lebanon', 'lesotho', 'liberia', 'libya', 'liechtenstein', 'lithuania', 'luxembourg', 'macao', 'macedonia, republic of', 'madagascar', 'malawi', 'malaysia', 'maldives', 'mali', 'malta', 'marshall islands', 'martinique', 'mauritania', 'mauritius', 'mayotte', 'mexico', 'micronesia, federated states of', 'moldova, republic of', 'monaco', 'mongolia', 'montenegro', 'montserrat', 'morocco', 'mozambique', 'myanmar', 'namibia', 'nauru', 'nepal', 'netherlands', 'new caledonia', 'new zealand', 'nicaragua', 'niger', 'nigeria', 'niue', 'norfolk island', 'northern mariana islands', 'norway', 'oman', 'pakistan', 'palau', 'palestinian territory, occupied', 'panama', 'papua new guinea', 'paraguay', 'peru', 'philippines', 'pitcairn', 'poland', 'portugal', 'puerto rico', 'qatar', 'réunion', 'romania', 'russian federation', 'rwanda', 'saint barthélemy', 'saint helena, ascension and tristan da cunha', 'saint kitts and nevis', 'saint lucia', 'saint martin (french part)', 'saint pierre and miquelon', 'saint vincent and the grenadines', 'samoa', 'san marino', 'sao tome and principe', 'saudi arabia', 'senegal', 'serbia', 'seychelles', 'sierra leone', 'singapore', 'sint maarten (dutch part)', 'slovakia', 'slovenia', 'solomon islands', 'somalia', 'south africa', 'south georgia and the south sandwich islands', 'spain', 'sri lanka', 'sudan', 'suriname', 'south sudan', 'svalbard and jan mayen', 'swaziland', 'sweden', 'switzerland', 'syrian arab republic', 'taiwan, province of china', 'tajikistan', 'tanzania, united republic of', 'thailand', 'timor-leste', 'togo', 'tokelau', 'tonga', 'trinidad and tobago', 'tunisia', 'turkey', 'turkmenistan', 'turks and caicos islands', 'tuvalu', 'uganda', 'ukraine', 'united arab emirates', 'united kingdom', 'united states', 'united states minor outlying islands', 'uruguay', 'uzbekistan', 'vanuatu', 'venezuela, bolivarian republic of', 'viet nam', 'virgin islands, british', 'virgin islands, u.s.', 'wallis and futuna', 'yemen', 'zambia', 'zimbabwe']
+    capital = ['kabul', 'tirana', 'algiers', 'pago pago', 'luanda', 'the valley', "saint john's", 'buenos aires', 'yerevan', 'oranjestad', 'canberra', 'vienna', 'baku', 'manama', 'dhaka', 'bridgetown', 'minsk', 'brussels', 'belmopan', 'porto-novo', 'hamilton', 'thimphu', 'sarajevo', 'gaborone', 'brasília', 'diego garcia', 'sofia', 'ouagadougou', 'bujumbura', 'phnom penh', 'yaoundé', 'ottawa', 'praia', 'george town', 'bangui', "n'djamena", 'santiago', 'beijing', 'flying fish cove', 'west island', 'bogotá', 'moroni', 'avarua', 'san josé', 'zagreb', 'havana', 'nicosia', 'prague', 'copenhagen', 'djibouti', 'roseau', 'santo domingo', 'quito', 'cairo', 'san salvador', 'malabo', 'asmara', 'tallinn', 'addis ababa', 'tórshavn', 'suva', 'helsinki', 'paris', 'cayenne', 'papeetē', 'libreville', 'tbilisi', 'berlin', 'accra', 'gibraltar', 'athens', 'nuuk', "st. george's", 'basse-terre', 'hagåtña', 'guatemala city', 'st. peter port', 'conakry', 'bissau', 'georgetown', 'port-au-prince', 'tegucigalpa', 'city of victoria', 'budapest', 'reykjavik', 'new delhi', 'jakarta', 'baghdad', 'dublin', 'douglas', 'jerusalem', 'rome', 'kingston', 'tokyo', 'saint helier', 'amman', 'astana', 'nairobi', 'south tarawa', 'kuwait city', 'bishkek', 'vientiane', 'riga', 'beirut', 'maseru', 'monrovia', 'tripoli', 'vaduz', 'vilnius', 'luxembourg', 'antananarivo', 'lilongwe', 'kuala lumpur', 'malé', 'bamako', 'valletta', 'majuro', 'fort-de-france', 'nouakchott', 'port louis', 'mamoudzou', 'mexico city', 'monaco', 'ulan bator', 'plymouth', 'rabat', 'maputo', 'windhoek', 'yaren', 'kathmandu', 'amsterdam', 'nouméa', 'wellington', 'managua', 'niamey', 'abuja', 'alofi', 'kingston', 'saipan', 'oslo', 'muscat', 'islamabad', 'ngerulmud', 'panama city', 'port moresby', 'asunción', 'lima', 'manila', 'warsaw', 'lisbon', 'san juan', 'doha', 'saint-denis', 'bucharest', 'moscow', 'kigali', 'basseterre', 'castries', 'saint-pierre', 'kingstown', 'apia', 'city of san marino', 'riyadh', 'dakar', 'belgrade', 'victoria', 'freetown', 'singapore', 'bratislava', 'ljubljana', 'honiara', 'mogadishu', 'pretoria', 'king edward point', 'madrid', 'colombo', 'khartoum', 'paramaribo', 'juba', 'longyearbyen', 'lobamba', 'stockholm', 'bern', 'damascus', 'dushanbe', 'bangkok', 'lomé', 'fakaofo', "nuku'alofa", 'port of spain', 'tunis', 'ankara', 'ashgabat', 'funafuti', 'kampala', 'kiev', 'abu dhabi', 'london', 'washington d.c.', 'montevideo', 'tashkent', 'port vila', 'mata-utu', "sana'a", 'lusaka', 'harare']
+    res = [ele for ele in country if(ele in sent)]
+    res1 = [ele for ele in capital if(ele in sent)]
+    if res:
+        loc = ''.join(res)
+        session['location'] = session.get('location',loc)
+
+    if res1:
+        loc = ''.join(res1)
+        session['location'] = session.get('location',loc)
+    
+
+
+def Result(sentence):
+    sent = sentence
+    fetch_location(sentence)
     sentence = sentence.lower()
     time_value = time(sentence)
     for i in range(len(time_value)):
