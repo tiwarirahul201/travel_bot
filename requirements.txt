@@ -26,7 +26,6 @@ contextvars==2.4
 cryptography==3.4.6
 cycler==0.10.0
 cymem==2.0.5
-dataclasses==0.8
 datefinder==0.7.1
 decorator==4.4.2
 dm-tree==0.1.5
