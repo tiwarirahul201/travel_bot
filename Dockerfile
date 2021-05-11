@@ -17,6 +17,8 @@ RUN rasa train nlu
 
 RUN python3 script.py
 
+RUN apt-get update
+
 
 RUN apt install -y maven
 
